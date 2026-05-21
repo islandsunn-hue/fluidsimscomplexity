@@ -113,16 +113,6 @@
     }
     .progress-label { font-size: .75rem; color: #6060a0; }
 
-    /* ── Main display ── */
-    .main-display {
-      width: 100%;
-      max-width: 760px;
-      display: none;
-      gap: 24px;
-      align-items: flex-start;
-    }
-    .main-display.visible { display: flex; }
-
     .gif-wrap {
       display: none;
       flex-direction: column;
@@ -143,39 +133,6 @@
       text-decoration: none;
     }
     .gif-wrap a:hover { text-decoration: underline; }
-
-    .preview-label { font-size: .7rem; color: #60607a; }
-
-    .stats-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding-top: 4px;
-    }
-
-    .stat-card {
-      background: #1a1a26;
-      border: 1px solid #2a2a40;
-      border-radius: 10px;
-      padding: 14px 18px;
-    }
-
-    .stat-card-label {
-      font-size: .68rem;
-      font-weight: 600;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .stat-card-value {
-      font-size: 2rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .stat-card-sub { font-size: .68rem; color: #50507a; margin-top: 4px; }
 
     /* ── Charts ── */
     .chart-wrap {
@@ -213,8 +170,7 @@
     Simulates two fluids mixing via an <strong>alternating sine-flow map</strong> — a classical
     model for Lagrangian chaos. Boltzmann entropy is computed from the
     concentration field. Graph complexity (distinct degree types) is measured independently
-    from the pixel-similarity graph. The two measures are expected to diverge at intermediate
-    mixing, where complexity peaks while entropy continues to rise.
+    from the pixel-similarity graph. 
   </p>
 
   <div class="controls">
@@ -241,23 +197,9 @@
     <div class="progress-label" id="progress-label">Running…</div>
   </div>
 
-  <div class="main-display" id="main-display">
-    <div class="gif-wrap" id="gif-wrap">
-      <img id="gif-img" src="" alt="simulation gif">
-      <a id="gif-dl" download="fluid_mix.gif">Download GIF</a>
-    </div>
-    <div class="stats-panel">
-      <div class="stat-card">
-        <div class="stat-card-label" style="color:#a0a0ff">Graph complexity</div>
-        <div class="stat-card-value" style="color:#a0a0ff" id="complexity-val">—</div>
-        <div class="stat-card-sub">distinct degree types in pixel-similarity graph</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label" style="color:#60d0a0">Boltzmann entropy</div>
-        <div class="stat-card-value" style="color:#60d0a0" id="entropy-val">—</div>
-        <div class="stat-card-sub">exact normalised mixing entropy S ∈ [0, 1]</div>
-      </div>
-    </div>
+  <div class="gif-wrap" id="gif-wrap">
+    <img id="gif-img" src="" alt="simulation gif">
+    <a id="gif-dl" download="fluid_mix.gif">Download GIF</a>
   </div>
 
   <div class="chart-wrap" id="complexity-wrap">
@@ -266,13 +208,12 @@
     <p class="chart-note">
       Each pixel in the 10×10 downsampled frame is a node. An edge is drawn between pixels
       with similarity &gt; 0.5 (globally normalised LAB distance). The count of distinct
-      node degrees measures structural variety in the mixing pattern. Hypothesis: peaks
-      at intermediate mixing when thin lamellae create the most varied connectivity.
+      node degrees measures structural variety in the mixing pattern. 
     </p>
   </div>
 
   <div class="chart-wrap" id="entropy-wrap">
-    <div class="chart-title" style="color:#60d0a0">Boltzmann entropy</div>
+    <div class="chart-title" style="color:#60d0a0">Boltzmann entropy (exact, normalised)</div>
     <canvas id="entropy-chart"></canvas>
     <p class="chart-note">
       Computed directly from the 64×64 concentration field:
@@ -322,9 +263,6 @@
     const progressWrap = document.getElementById('progress-wrap');
     const progressFill = document.getElementById('progress-fill');
     const progressLabel = document.getElementById('progress-label');
-    const mainDisplay  = document.getElementById('main-display');
-    const complexityEl = document.getElementById('complexity-val');
-    const entropyEl    = document.getElementById('entropy-val');
     const gifWrap        = document.getElementById('gif-wrap');
     const gifImg         = document.getElementById('gif-img');
     const gifDl          = document.getElementById('gif-dl');
@@ -382,7 +320,7 @@
 
       complexityChart = makeChart('complexity-chart', 'Distinct degree types',
         'Distinct degree types', '#7070ff', 'rgba(112,112,255,0.12)', '#a0a0ff');
-      entropyChart = makeChart('entropy-chart', 'Boltzmann mixing entropy',
+      entropyChart = makeChart('entropy-chart', 'Boltzmann entropy',
         'Entropy (0 = separated, 1 = fully mixed)',
         '#30c090', 'rgba(48,192,144,0.12)', '#60d0a0');
 
@@ -437,8 +375,6 @@
     }
 
     function pushFrame(msg) {
-      complexityEl.textContent = msg.complexity;
-      entropyEl.textContent    = msg.entropy.toFixed(4);
 
       complexityChart.data.labels.push(msg.frame);
       complexityChart.data.datasets[0].data.push(msg.complexity);
@@ -459,7 +395,6 @@
     async function startRun() {
       if (activeSource) { activeSource.close(); activeSource = null; }
       runBtn.disabled = true;
-      mainDisplay.classList.add('visible');
       progressWrap.classList.add('visible');
       progressFill.style.width = '0%';
       progressLabel.textContent = 'Running simulation…';

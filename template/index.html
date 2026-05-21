@@ -211,7 +211,7 @@
 
   <p class="subtitle">
     Simulates two fluids mixing via an <strong>alternating sine-flow map</strong> — a classical
-    model for Lagrangian chaos. Boltzmann entropy is computed <em>exactly</em> from the
+    model for Lagrangian chaos. Boltzmann entropy is computed from the
     concentration field. Graph complexity (distinct degree types) is measured independently
     from the pixel-similarity graph. The two measures are expected to diverge at intermediate
     mixing, where complexity peaks while entropy continues to rise.
@@ -272,7 +272,7 @@
   </div>
 
   <div class="chart-wrap" id="entropy-wrap">
-    <div class="chart-title" style="color:#60d0a0">Boltzmann mixing entropy (exact, normalised)</div>
+    <div class="chart-title" style="color:#60d0a0">Boltzmann entropy</div>
     <canvas id="entropy-chart"></canvas>
     <p class="chart-note">
       Computed directly from the 64×64 concentration field:
@@ -291,8 +291,6 @@
       <span style="color:#6060ff">blue (early)</span> to
       <span style="color:#ff6030">orange (late)</span>,
       showing the trajectory through entropy–complexity space.
-      A rightward arc that peaks then falls would confirm that complexity
-      is maximised at intermediate entropy — the edge-of-chaos signature.
     </p>
   </div>
 
@@ -526,3 +524,4 @@
   </script>
 </body>
 </html>
+

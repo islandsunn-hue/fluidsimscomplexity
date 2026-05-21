@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fluid Mixing Analyser</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f13;
+      color: #e0e0e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px;
+      gap: 28px;
+    }
+
+    h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: .04em; color: #c8c8e0; }
+
+    .subtitle {
+      max-width: 680px;
+      text-align: center;
+      font-size: .82rem;
+      color: #6060a0;
+      line-height: 1.65;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 24px;
+      width: 100%;
+      max-width: 760px;
+      background: #1a1a26;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .slider-label {
+      font-size: .78rem;
+      color: #9090b0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .slider-label span { color: #e0e0f8; font-weight: 600; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      background: linear-gradient(to right, #4a4aff var(--pct, 50%), #2a2a40 var(--pct, 50%));
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: #7070ff;
+      box-shadow: 0 0 5px #7070ff88;
+    }
+
+    .hint { font-size: .68rem; color: #50506a; }
+
+    .btn {
+      padding: 10px 28px;
+      border-radius: 8px;
+      border: none;
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #5050ff;
+      color: #fff;
+      transition: background .15s;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+    .btn:hover  { background: #6060ff; }
+    .btn:disabled { opacity: .45; cursor: default; }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      width: 100%;
+      max-width: 760px;
+      display: none;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .progress-wrap.visible { display: flex; }
+    .progress-bar-bg { height: 5px; background: #1e1e30; border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(to right, #5050ff, #30c090);
+      border-radius: 3px;
+      width: 0%;
+      transition: width .15s;
+    }
+    .progress-label { font-size: .75rem; color: #6060a0; }
+
+    /* ── Main display ── */
+    .main-display {
+      width: 100%;
+      max-width: 760px;
+      display: none;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .main-display.visible { display: flex; }
+
+    .gif-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .gif-wrap.visible { display: flex; }
+    .gif-wrap img {
+      width: 256px;
+      height: 256px;
+      image-rendering: pixelated;
+      border-radius: 8px;
+      border: 1px solid #2a2a40;
+    }
+    .gif-wrap a {
+      font-size: .75rem;
+      color: #7070ff;
+      text-decoration: none;
+    }
+    .gif-wrap a:hover { text-decoration: underline; }
+
+    .preview-label { font-size: .7rem; color: #60607a; }
+
+    .stats-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 4px;
+    }
+
+    .stat-card {
+      background: #1a1a26;
+      border: 1px solid #2a2a40;
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+
+    .stat-card-label {
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-card-sub { font-size: .68rem; color: #50507a; margin-top: 4px; }
+
+    /* ── Charts ── */
+    .chart-wrap {
+      width: 100%;
+      max-width: 760px;
+      background: #1a1a26;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      padding: 22px 24px;
+      display: none;
+    }
+    .chart-wrap.visible { display: block; }
+
+    .chart-title {
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .chart-note {
+      margin-top: 10px;
+      font-size: .68rem;
+      color: #50507a;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Fluid Mixing Analyser</h1>
+
+  <p class="subtitle">
+    Simulates two fluids mixing via an <strong>alternating sine-flow map</strong> — a classical
+    model for Lagrangian chaos. Boltzmann entropy is computed <em>exactly</em> from the
+    concentration field. Graph complexity (distinct degree types) is measured independently
+    from the pixel-similarity graph. The two measures are expected to diverge at intermediate
+    mixing, where complexity peaks while entropy continues to rise.
+  </p>
+
+  <div class="controls">
+    <div class="slider-group">
+      <div class="slider-label"><span>Steps</span><span id="steps-val">80</span></div>
+      <input type="range" id="steps-sl" min="20" max="300" value="80">
+      <div class="hint">Total simulation frames to generate</div>
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>Diffusion</span><span id="diff-val">0.08</span></div>
+      <input type="range" id="diff-sl" min="1" max="24" value="8">
+      <div class="hint">Molecular diffusion coefficient (×0.01)</div>
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>Flow speed</span><span id="flow-val">2.0</span></div>
+      <input type="range" id="flow-sl" min="5" max="60" value="20">
+      <div class="hint">Peak shear displacement in grid units (×0.1)</div>
+    </div>
+    <button class="btn" id="run-btn">Run</button>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div class="progress-label" id="progress-label">Running…</div>
+  </div>
+
+  <div class="main-display" id="main-display">
+    <div class="gif-wrap" id="gif-wrap">
+      <img id="gif-img" src="" alt="simulation gif">
+      <a id="gif-dl" download="fluid_mix.gif">Download GIF</a>
+    </div>
+    <div class="stats-panel">
+      <div class="stat-card">
+        <div class="stat-card-label" style="color:#a0a0ff">Graph complexity</div>
+        <div class="stat-card-value" style="color:#a0a0ff" id="complexity-val">—</div>
+        <div class="stat-card-sub">distinct degree types in pixel-similarity graph</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label" style="color:#60d0a0">Boltzmann entropy</div>
+        <div class="stat-card-value" style="color:#60d0a0" id="entropy-val">—</div>
+        <div class="stat-card-sub">exact normalised mixing entropy S ∈ [0, 1]</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap" id="complexity-wrap">
+    <div class="chart-title" style="color:#a0a0ff">Graph complexity — distinct degree types</div>
+    <canvas id="complexity-chart"></canvas>
+    <p class="chart-note">
+      Each pixel in the 10×10 downsampled frame is a node. An edge is drawn between pixels
+      with similarity &gt; 0.5 (globally normalised LAB distance). The count of distinct
+      node degrees measures structural variety in the mixing pattern. Hypothesis: peaks
+      at intermediate mixing when thin lamellae create the most varied connectivity.
+    </p>
+  </div>
+
+  <div class="chart-wrap" id="entropy-wrap">
+    <div class="chart-title" style="color:#60d0a0">Boltzmann mixing entropy (exact, normalised)</div>
+    <canvas id="entropy-chart"></canvas>
+    <p class="chart-note">
+      Computed directly from the 64×64 concentration field:
+      S = ⟨−[x ln x + (1−x) ln(1−x)]⟩ / ln 2.
+      No colour-approximation involved. S = 0 when fluids are fully separated;
+      S = 1 when every site is at exactly 50/50. Expected to rise monotonically
+      (second law of thermodynamics).
+    </p>
+  </div>
+
+  <div class="chart-wrap" id="scatter-wrap">
+    <div class="chart-title" style="color:#e0c060">Complexity vs Boltzmann entropy</div>
+    <canvas id="scatter-chart"></canvas>
+    <p class="chart-note">
+      Each point is one simulation step. Colour runs from
+      <span style="color:#6060ff">blue (early)</span> to
+      <span style="color:#ff6030">orange (late)</span>,
+      showing the trajectory through entropy–complexity space.
+      A rightward arc that peaks then falls would confirm that complexity
+      is maximised at intermediate entropy — the edge-of-chaos signature.
+    </p>
+  </div>
+
+  <script>
+    // ── Sliders ──
+    const stepsSl  = document.getElementById('steps-sl');
+    const diffSl   = document.getElementById('diff-sl');
+    const flowSl   = document.getElementById('flow-sl');
+    const stepsVal = document.getElementById('steps-val');
+    const diffVal  = document.getElementById('diff-val');
+    const flowVal  = document.getElementById('flow-val');
+
+    function pct(s) { return (s.value - s.min) / (s.max - s.min) * 100; }
+
+    function syncSliders() {
+      [stepsSl, diffSl, flowSl].forEach(s =>
+        s.style.setProperty('--pct', pct(s) + '%')
+      );
+      stepsVal.textContent = stepsSl.value;
+      diffVal.textContent  = (diffSl.value  / 100).toFixed(2);
+      flowVal.textContent  = (flowSl.value  / 10).toFixed(1);
+    }
+
+    [stepsSl, diffSl, flowSl].forEach(s => s.addEventListener('input', syncSliders));
+    syncSliders();
+
+    // ── UI refs ──
+    const runBtn       = document.getElementById('run-btn');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+    const progressLabel = document.getElementById('progress-label');
+    const mainDisplay  = document.getElementById('main-display');
+    const complexityEl = document.getElementById('complexity-val');
+    const entropyEl    = document.getElementById('entropy-val');
+    const gifWrap        = document.getElementById('gif-wrap');
+    const gifImg         = document.getElementById('gif-img');
+    const gifDl          = document.getElementById('gif-dl');
+    const complexityWrap = document.getElementById('complexity-wrap');
+    const entropyWrap    = document.getElementById('entropy-wrap');
+    const scatterWrap    = document.getElementById('scatter-wrap');
+
+    let complexityChart = null;
+    let entropyChart    = null;
+    let scatterChart    = null;
+    let activeSource    = null;
+    let totalFrames     = 1;
+
+    // ── Charts ──
+    function makeChart(id, label, yLabel, border, bg, point) {
+      return new Chart(document.getElementById(id), {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{ label, data: [], borderColor: border,
+            backgroundColor: bg, pointBackgroundColor: point,
+            pointRadius: 2, pointHoverRadius: 5, tension: 0.3, fill: true }],
+        },
+        options: {
+          animation: false, responsive: true,
+          scales: {
+            x: { title: { display: true, text: 'Step', color: '#6060a0' },
+                 ticks: { color: '#6060a0', maxTicksLimit: 20 },
+                 grid: { color: '#1e1e30' } },
+            y: { title: { display: true, text: yLabel, color: '#6060a0' },
+                 ticks: { color: '#6060a0' },
+                 grid: { color: '#1e1e30' }, beginAtZero: true },
+          },
+          plugins: { legend: { labels: { color: '#a0a0c0' } } },
+        },
+      });
+    }
+
+    // Colour each scatter point by progress through the run: blue → orange
+    function frameColor(frame) {
+      const t = (frame - 1) / Math.max(totalFrames - 1, 1);
+      const r = Math.round(96  + 159 * t);
+      const g = Math.round(96  -  16 * t);
+      const b = Math.round(255 - 207 * t);
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function initCharts() {
+      if (complexityChart) complexityChart.destroy();
+      if (entropyChart)    entropyChart.destroy();
+      if (scatterChart)    scatterChart.destroy();
+      complexityWrap.classList.add('visible');
+      entropyWrap.classList.add('visible');
+      scatterWrap.classList.add('visible');
+
+      complexityChart = makeChart('complexity-chart', 'Distinct degree types',
+        'Distinct degree types', '#7070ff', 'rgba(112,112,255,0.12)', '#a0a0ff');
+      entropyChart = makeChart('entropy-chart', 'Boltzmann mixing entropy',
+        'Entropy (0 = separated, 1 = fully mixed)',
+        '#30c090', 'rgba(48,192,144,0.12)', '#60d0a0');
+
+      scatterChart = new Chart(document.getElementById('scatter-chart'), {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Step',
+            data: [],
+            pointBackgroundColor: [],
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }],
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          scales: {
+            x: {
+              type: 'linear',
+              title: { display: true, text: 'Boltzmann entropy (xᵉ scale)', color: '#6060a0' },
+              ticks: {
+                color: '#6060a0',
+                callback: v => Math.pow(v, 1/Math.E).toFixed(2),
+              },
+              afterBuildTicks(scale) {
+                // Place ticks at nice original entropy values; store as x²
+                scale.ticks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+                  .map(v => ({ value: Math.pow(v, Math.E) }));
+              },
+              grid: { color: '#1e1e30' },
+              min: -0.02,
+              max: 1.05,
+            },
+            y: {
+              title: { display: true, text: 'Distinct degree types', color: '#6060a0' },
+              ticks: { color: '#6060a0', precision: 0 },
+              grid:  { color: '#1e1e30' },
+              beginAtZero: true,
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Step ${ctx.raw.frame}  |  S = ${ctx.raw.entropy.toFixed(4)}  |  complexity = ${ctx.raw.y}`,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function pushFrame(msg) {
+      complexityEl.textContent = msg.complexity;
+      entropyEl.textContent    = msg.entropy.toFixed(4);
+
+      complexityChart.data.labels.push(msg.frame);
+      complexityChart.data.datasets[0].data.push(msg.complexity);
+      complexityChart.update('none');
+
+      entropyChart.data.labels.push(msg.frame);
+      entropyChart.data.datasets[0].data.push(msg.entropy);
+      entropyChart.update('none');
+
+      scatterChart.data.datasets[0].data.push({ x: Math.pow(msg.entropy, Math.E), y: msg.complexity, frame: msg.frame, entropy: msg.entropy });
+      scatterChart.data.datasets[0].pointBackgroundColor.push(frameColor(msg.frame));
+      scatterChart.update('none');
+    }
+
+    // ── Run ──
+    runBtn.addEventListener('click', startRun);
+
+    async function startRun() {
+      if (activeSource) { activeSource.close(); activeSource = null; }
+      runBtn.disabled = true;
+      mainDisplay.classList.add('visible');
+      progressWrap.classList.add('visible');
+      progressFill.style.width = '0%';
+      progressLabel.textContent = 'Running simulation…';
+      gifWrap.classList.remove('visible');
+      initCharts();
+
+      const params = {
+        n_steps:    parseInt(stepsSl.value),
+        diffusion:  parseFloat(diffSl.value)  / 100,
+        flow_speed: parseFloat(flowSl.value)  / 10,
+      };
+
+      let res;
+      try {
+        res = await fetch('/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        });
+      } catch (e) {
+        progressLabel.textContent = 'Error: ' + e.message;
+        runBtn.disabled = false;
+        return;
+      }
+      const { id, error } = await res.json();
+      if (error) { progressLabel.textContent = 'Error: ' + error; runBtn.disabled = false; return; }
+
+      const es = new EventSource(`/stream/${id}`);
+      activeSource = es;
+
+      es.onmessage = ({ data }) => {
+        const msg = JSON.parse(data);
+        if (msg.type === 'total') {
+          totalFrames = msg.total;
+          progressLabel.textContent = `Streaming ${msg.total} frames…`;
+        } else if (msg.type === 'frame') {
+          progressFill.style.width = (msg.frame / msg.total * 100) + '%';
+          progressLabel.textContent = `Frame ${msg.frame} / ${msg.total}`;
+          pushFrame(msg);
+        } else if (msg.type === 'done') {
+          progressLabel.textContent = `Done — ${msg.total} steps`;
+          runBtn.disabled = false;
+          es.close();
+        } else if (msg.type === 'gif') {
+          const src = 'data:image/gif;base64,' + msg.data;
+          gifImg.src = src;
+          gifDl.href = src;
+          gifWrap.classList.add('visible');
+        } else if (msg.type === 'error') {
+          progressLabel.textContent = 'Error: ' + msg.message;
+          runBtn.disabled = false;
+          es.close();
+        }
+      };
+
+      es.onerror = () => {
+        progressLabel.textContent = 'Stream lost';
+        runBtn.disabled = false;
+        es.close();
+      };
+    }
+  </script>
+</body>
+</html>

@@ -1,7 +1,0 @@
-opencv-python
-numpy
-scipy
-networkx
-scikit-image
-flask
-pillow
